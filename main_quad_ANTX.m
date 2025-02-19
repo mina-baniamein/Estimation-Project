@@ -76,9 +76,61 @@ t=ExcitationM(:,1);
 
 simulation_time=t(end)-t(1);
 
-%% Launch SIMULATOR
+% %% Launch SIMULATOR
+% 
+% sim Simulator_Single_Axis
 
-sim Simulator_Single_Axis
+%% Task 1 
+time = 0:sample_time:simulation_time;
+%% plot input
+
+figure
+u_time=ExcitationM(:,1);
+u_value=ExcitationM(:,2);
+u_value=u_value(u_time>26 & u_time<100);
+u_time=u_time(u_time>26 & u_time<100);
+plot(u_time, u_value)
+grid
+title('input signal')
+ylabel('u')
+xlabel('time [s]')
+%% 
+
+odefun= @drone_model;
+
+load_system('Simulator_Single_Axis');
+
+simulation = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
+
+
+data.ax = simulation.ax;
+data.q = simulation.q;
+input = simulation.Mtot;
+
+output = [data.q data.ax]; % Measured acceleration and pitch rate
+
+sim_data = iddata(output, input, sample_time);
+data_fd = fft(sim_data); % output of the simulation in the frequency domain
+
+
+% Initial guess for the parameters
+initial_guess = [0, 0, 0, 0, 0, 0]; % Replace with your initial guesses if known
+
+% Define the parameters as a cell array
+parameters = {initial_guess(1), initial_guess(2), initial_guess(3), ...
+              initial_guess(4), initial_guess(5), initial_guess(6)};
+
+sys_init = idgrey(odefun, 'c', parameters);
+
+% Model Identification
+identification = struct;
+estimated_model = greyest(data_fd, sys_init);
+identification.parameters = estimated_model.Report.Parameters.ParVector;
+identification.fit = estimated_model.Report.Fit.FitPercent;
+identification.covariance = getcov(estimated_model);
+identification.matrix={estimated_model.A; estimated_model.B; estimated_model.C; estimated_model.D};
+identification.estimated_model=estimated_model;
+
 
 %% Delete temporary files
 
@@ -87,3 +139,19 @@ if exist('slprj','dir')
 end
 
 %% END OF CODE
+%Functions
+function [A,B,C,D] = drone_model(Xu,Xq,Mu,Mq,Xd,Md)
+
+A=[Xu, Xq, -9.81; Mu, Mq, 0; 0, 1, 0];
+
+B=[Xd; Md; 0];
+
+C=[1, 0, 0; 0, 1, 0; 0, 0, 1; Xu, Xq, 0]; 
+
+D=[0; 0; 0; Xd];
+
+end
+
+
+
+
