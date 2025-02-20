@@ -4,7 +4,7 @@ function [identification varargout] = Model_identification(simulation_data,sampl
 % Function to identify by grey_box ID
 
 % Authors:  Alessandro Castelanelli Oddo (alessandro.castelanelli@polimi.it)
-%            (@polimi.it)                     
+%           Mina Baniamein (mina.baniamein@polimi.it)                     
 %            (@polimi.it)                                                   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
