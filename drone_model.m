@@ -4,7 +4,7 @@ function [A,B,C,D] = drone_model(params,Ts)
 % Function to describe the drone model
 
 % Authors:  Alessandro Castelanelli Oddo (alessandro.castelanelli@polimi.it)
-%            (@polimi.it)                     
+%           Mina Baniamein (mina.baniamein@polimi.it)                     
 %            (@polimi.it)                                                   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
