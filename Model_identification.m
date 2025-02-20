@@ -28,6 +28,7 @@ identification = struct;
 estimated_model = greyest(data_fd, sys_init);
 identification.parameters = estimated_model.Report.Parameters.ParVector;
 identification.fit = estimated_model.Report.Fit.FitPercent;
+identification.fpe = estimated_model.Report.Fit.FPE;
 identification.covariance = getcov(estimated_model);
 identification.matrix={estimated_model.A; estimated_model.B; estimated_model.C; estimated_model.D};
 identification.estimated_model=estimated_model;
