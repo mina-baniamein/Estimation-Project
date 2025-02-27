@@ -13,7 +13,7 @@ function [A,B,C,D,K] = pbsid(u,y,p,f)
     % Construct Phi matrix
     for k = p:N-1
         % Generate Z^(k-1, k-p) using u and y
-        Z_kp_k = zetagenCdeltaD(u, y, k - p + 1, p);  % Get p elements
+        Z_kp_k = zetagenCdeltaD(u, y, k, p);  % Get p elements
         
         % Fill the regression matrix Phi
         Phi(k - p + 1, 1:nZ) = Z_kp_k(:)';  % Flatten Z into a row
