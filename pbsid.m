@@ -18,7 +18,7 @@ function [A,B,C,D,K] = pbsid(u,y,p,f)
 
         % Fill the regression matrix Phi
         Phi(k - p, 1:nZ_kp_k) = Z_kp_k(:)';  % Flatten Z into a row
-        Phi(k - p, end) = u(k);  % Last column is u(k+p)
+        Phi(k - p, end) = u(k);  % Last column is u(k)
     end
     
     % Solve the least squares problem using normal equations
