@@ -18,14 +18,14 @@ function [A,B,C,D,K] = pbsid(u,y,p,f)
 
         % Fill the regression matrix Phi
         Phi(k - p, 1:nZ_kp_k) = Z_kp_k(:)';  % Flatten Z into a row
-        Phi(k - p, end) = u(k + p);  % Last column is u(k+p)
+        Phi(k - p, end) = u(k);  % Last column is u(k+p)
     end
     
     % Solve the least squares problem using normal equations
     theta = (Phi' * Phi) \ (Phi' * Y);
     
-    % Extract results
-    C_Delta_p = reshape(theta(1:nZ), [], 2)';  % Reshape back to C_Delta_p
+    % % Extract results
+    C_Delta_p = theta(1:(length(theta)-1);  % Reshape back to C_Delta_p
     D = theta(end);
 
 end
