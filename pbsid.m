@@ -25,7 +25,7 @@ function [A,B,C,D,K] = pbsid(u,y,p,f)
     theta = (Phi' * Phi) \ (Phi' * Y);
     
     % % Extract results
-    C_Delta_p = theta(1:(length(theta)-1);  % Reshape back to C_Delta_p
+    C_Delta_p = theta(1:(length(theta)-1));  % Reshape back to C_Delta_p
     D = theta(end);
 
 end
