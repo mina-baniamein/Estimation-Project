@@ -1,10 +1,12 @@
 clc
-N = length(u_value);
-p = 12;
 
-u = u_value;
+u = u_value(u_time>26 & u_time<100);
 y1 = simulation_data.q((u_time>26 & u_time<100));
 y2 = simulation_data.ax((u_time>26 & u_time<100));
+
+N = length(u);
+
+p = N/2;
 
 y = y1;
     % Get the total number of data points
@@ -14,13 +16,13 @@ y = y1;
     % nZ = 2 * (N - p);  % Since z is built from interleaved u and y
     
     % Initialize matrices
-    Y = y(p+1:N);  % Target output values
+    Y = y(p:N-1);  % Target output values
     Phi = zeros(N - p, 2*p+1);  % Regression matrix (including D)
     
     % Construct Phi matrix
     for k = (p+1):N
         % Generate Z^(k-1, k-p) using u and y
-        Z_kp_k = zetagenCdeltaD(u, y, k, p);  % Get p elements
+        Z_kp_k = zetagenCdeltaD(u, y, k, p)  % Get p elements
         nZ_kp_k = length(Z_kp_k);
 
         % Fill the regression matrix Phi
@@ -35,7 +37,8 @@ y = y1;
 
     % % Extract results
     C_Delta_p = x(1:(length(x)-1));  % Reshape back to C_Delta_p
-    D = x(end)
+    D = x(end);
+
 
 
     
