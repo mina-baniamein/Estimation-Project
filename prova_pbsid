@@ -1,0 +1,271 @@
+clc
+
+
+
+u = u_value(u_time>26 & u_time<100);
+y1 = simulation_data.q((u_time>26 & u_time<100));  %column
+y2 = simulation_data.ax((u_time>26 & u_time<100)); %column
+
+y = y1; %cambiare qua vettore misura output
+N = length(u);
+
+p = 12;
+% U = u';
+% Y = y';
+
+%% 
+
+
+    % Get the total number of data points
+    N = length(y);
+
+    % Define the number of parameters in C_Delta_p (assumed size from Z)
+    % nZ = 2 * (N - p);  % Since z is built from interleaved u and y
+
+    % Initialize matrices
+    Y = y(p:N-1);  % Target output values
+    Phi = zeros(N - p, 2*p+1);  % Regression matrix (including D)
+
+    % Construct Phi matrix
+    for k = (p+1):N
+        % Generate Z^(k-1, k-p) using u and y
+        Z_kp_k = zetagenCdeltaD(u, y, k, p);  % Get p elements
+        nZ_kp_k = length(Z_kp_k);
+
+        % Fill the regression matrix Phi
+        Phi(k - p, 1:nZ_kp_k) = Z_kp_k(:)';  % Flatten Z into a row
+        Phi(k - p, end) = u(k);  % Last column is u(k)
+    end
+  % z ale generation  
+    for k = (p+1):N
+        % Generate Z^(k-1, k-p) using u and y
+        Z_kp_k_ale = Z_k2_k1(u, y, k-1, k-p);  % Get p elements
+        nZ_kp_k = length(Z_kp_k_ale);
+
+        % Fill the regression matrix Phi
+        Phi(k - p, 1:nZ_kp_k) = Z_kp_k_ale(:)';  % Flatten Z into a row
+        Phi(k - p, end) = u(k);  % Last column is u(k)
+    end
+    
+    %% 
+    z_ale  = Z_kp_k_ale;
+    z_mina = Z_kp_k;
+    error  = z_ale - z_mina' ;
+%% 
+
+
+
+    % Solve the least squares problem using normal equations
+    % theta = (Phi' * Phi) \ (Phi' * Y);
+
+    x = lsqr(Phi,Y);
+
+    % % Extract results
+    C_Delta_p = x(1:(length(x)-1));  % Reshape back to C_Delta_p
+    D = x(end);
+    f = p; %assumption
+    C_Delta_f = C_Delta_p;
+
+    Gamma_f_Delta_p = zeros(length(C_Delta_f), length(C_Delta_p));
+    
+    % Fill the first row with A
+    Gamma_f_Delta_p(1, :) = C_Delta_p';
+    
+    % Fill the first column with B
+    Gamma_f_Delta_p(:, 1) = C_Delta_f;
+
+    for d = 2 : length(C_Delta_p)
+        for s = 2 : (d-1)
+            q = (d+1 - s);
+            Gamma_f_Delta_p(q, s) = C_Delta_p(d);
+        end
+    end
+
+    % constructing Z
+
+
+    Z = [];
+    for k = 0 : N-p-1
+        Z_temp = Z_k2_k1(u, y, p+k, 1+k);
+        Z = [Z, Z_temp];
+    end
+
+    [~, S_svd, V_svd] = svd(Gamma_f_Delta_p * Z , 'econ');
+
+    figure
+    plot(diag(S_svd), 'o')
+%% Section break per scegliere n
+
+    %X_est = sqrtm(S_svd(1,:)) * V_svd';
+
+    n = 2; %dal grafico dei singular values (oppure dal modello lineare) sappiamo che n=1
+
+    X_est_n = sqrtm(S_svd(1:n, 1:n)) * V_svd(:, 1:n)';
+ 
+    u_C = Phi(:,end);
+ 
+%% C estimation
+ b_C = Y - D.*u_C;
+ A_C = X_est_n';
+ 
+ C = lsqr(A_C,b_C)
+ %% A B K estimation
+ e = zeros(N-2-p,1);
+ b_ABK = zeros(2*(N-2-p),1);
+ index = 1;
+ A_ABK = zeros(2*(N-2-p),8);
+ 
+ for i = p : N-2
+     e(index) = y(i) - C' * X_est_n(:,i-p+1) - D* u(i);
+     
+     b_ABK(2*index-1,1) = X_est_n(1,index+1);
+     b_ABK(2*index,1) = X_est_n(2,index+1);
+
+     
+     
+     A_ABK(2*index-1,:) = [[X_est_n(:,index)', 0,0] , [u(i),0], [e(index),0]];
+     A_ABK(2*index,:)   = [[X_est_n(:,index)', 0,0] , [u(i),0], [e(index),0]];
+     
+    
+     index = index + 1;
+ end
+
+ABK = lsqr(A_ABK, b_ABK);
+
+A = reshape(ABK(1:4),2,2)
+B = ABK(5:6)
+K = ABK(7:8)
+
+
+
+     
+
+
+
+%% Delft toolbox 
+
+% PBSID-varx
+[S,X] = dordvarx(u,y,p,p,'tikh','gcv');
+figure, semilogy(S,'*');
+%% Section break Delft per scegliere n
+
+n = 2;
+x = dmodx(X,n);
+[Ai,Bi,Ci,D_delft,Ki] = dx2abcdk(x,u,y,p,p);
+D_delft
+
+%% Python algorithm
+
+[CDeltap, Z_0_pm1_l, Y_p_p_l] = estimateMarkovParameters(U, Y, p);
+
+
+
+[A, Acl, B, K, C, s_singular, X_p_p_l] = estimateModel(U, Y, CDeltap, Z_0_pm1_l, p, p, 1)
+
+function [M_pm1, Z_0_pm1_l, Y_p_p_l] = estimateMarkovParameters(U, Y, past)
+    timeSteps = size(U, 2);
+    m = size(U, 1);
+    r = size(Y, 1);
+    l = timeSteps - past - 1;
+    
+    % Data matrices for estimating the Markov parameters
+    Y_p_p_l = zeros(r, l + 1);
+    Z_0_pm1_l = zeros((m + r) * past, l + 1); % Returned
+    M_pm1 = zeros(r, (m + r) * past); % Returned
+    
+    % Form the matrices "Y_p_p_l" and "Z_0_pm1_l"
+    for j = 0:l
+        for i = 0:past-1
+            Z_0_pm1_l(i * (m + r) + (1:m), j + 1) = U(:, i + j + 1);
+            Z_0_pm1_l(i * (m + r) + m + (1:r), j + 1) = Y(:, i + j + 1);
+        end
+        Y_p_p_l(:, j + 1) = Y(:, j + past + 1);
+    end
+    
+    % Compute M_pm1 using pseudoinverse
+    M_pm1 = Y_p_p_l * pinv(Z_0_pm1_l);
+end
+
+function [A, Acl, B, K, C, s_singular, X_p_p_l] = estimateModel(U,Y,Markov,Z_0_pm1_l,past,future,order_estimate)
+    % Dimensions
+timeSteps = size(U,2);
+m = size(U,1);
+r = size(Y,1);
+l = timeSteps - past - 1; % note: in Python l = timeSteps-past-1
+n = order_estimate;
+
+% ----------------------------------------------
+% Build the block matrix Qpm1 of size (future*r) x (past*(m+r))
+Qpm1 = zeros(future*r, past*(m+r));
+for i = 1 : future
+    % In the original Python code the loop variable "i" runs from 0 to future-1.
+    % Adjusting to MATLAB indexing, let i0 = i-1.
+    i0 = i - 1;
+    row_ind = (i0*r + 1) : (i0*r + r);
+    col_start = i0*(m+r) + 1;
+    col_end = (m+r) * (past - i0);
+    Qpm1(row_ind, col_start:col_end) = Markov(:,1:(m+r)*(past - i0));
+end
+
+% ----------------------------------------------
+% Estimate the state sequence using SVD
+Qpm1_times_Z = Qpm1 * Z_0_pm1_l;
+[~, S, V] = svd(Qpm1_times_Z, 'econ'); 
+% Extract singular values and compute the estimated state sequence
+s_singular = diag(S);
+% In MATLAB, V has the right singular vectors (columns) so that Qpm1_times_Z = U*S*V'
+% The Python code takes np.diag(sqrt(s_singular[:n])) * Vsvd_transpose[:n,:]
+% which is equivalent to:
+X_p_p_l = diag(sqrt(s_singular(1:n))) * V(:,1:n)';
+
+% ----------------------------------------------
+% Partition the estimated state sequence for dynamics estimation
+X_pp1_pp1_lm1 = X_p_p_l(:,2:end);
+X_p_p_lm1    = X_p_p_l(:,1:end-1);
+
+% ----------------------------------------------
+% Form the matrices Z_p_p_lm1 and Y_p_p_l from the data.
+% Note: In the original Python code, U(:,past:past+l) and Y(:,past:past+l) are used
+% which in MATLAB (with 1-based indexing) correspond to U(:, past+1:past+l)
+Z_p_p_lm1 = zeros(m+r, l);
+Z_p_p_lm1(1:m,:)   = U(:, past+1 : past+l);
+Z_p_p_lm1(m+1:m+r,:) = Y(:, past+1 : past+l);
+
+Y_p_p_l = Y(:, past+1 : end);
+
+% ----------------------------------------------
+% Form the composite regression data matrix and compute the system matrices
+S_mat = [X_p_p_lm1; Z_p_p_lm1];
+% Compute the least-squares solution
+ABK = X_pp1_pp1_lm1 * pinv(S_mat);
+
+% Extract the submatrices:
+Acl = ABK(1:n, 1:n);
+B   = ABK(1:n, n+1:n+m);
+K   = ABK(1:n, n+m+1:n+m+r);
+
+% Estimate C from the outputs and the full estimated state sequence.
+C = Y_p_p_l * pinv(X_p_p_l);
+% Recover A using the relation A = Acl + K*C
+A = Acl + K * C;
+end
+
+function Z_out = Z_k2_k1(u, y, k2, k1)
+
+if k1 > k2
+    disp('error: k2 must be higher thah k1')
+    return 
+end
+
+z = zeros(1,2*(k2 - k1 +1));
+index = 1;
+
+
+for i= k1:k2 
+    z(1,2*index-1) = y(i);
+    z(1,2*index) = u(i);
+    index = index + 1;
+end
+
+Z_out = (flip(z))';
+end
