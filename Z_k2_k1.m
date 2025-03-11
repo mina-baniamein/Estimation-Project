@@ -10,8 +10,8 @@ index = 1;
 
 
 for i= k1:k2 
-    z(1,2*index-1) = u(i);
-    z(1,2*index) = y(i);
+    z(1,2*index-1) = y(i);
+    z(1,2*index) = u(i);
     index = index + 1;
 end
 
