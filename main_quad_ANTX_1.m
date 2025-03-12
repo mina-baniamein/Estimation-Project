@@ -102,6 +102,34 @@ model_fun = 'drone_model';
 real_parameters = [Xu; Xq; Mu; Mq; Xd; Md];
 % Function call
 [identification varargout] = Model_identification(simulation_data,sample_time,model_fun,real_parameters);
+%% Task 2
+%% PBSID
+% u = u_value(u_time>26 & u_time<100);
+% y = simulation_data.q(u_time>26 & u_time<100);
+% p = 10 ;
+% Evaluation of the method by Step Function
+A1 = 0.1;
+B1 = 0.2;
+C1 = 0.2;
+D1 = 0.3;
+sys1 = ss(A1,B1,C1,D1);
+t1 = 0 : 0.01 : 10;
+u1 = ones(size(t1))';
+
+[y1,t_out1,x1] = lsim(sys1,u1,t1);
+%%
+u1 = u_value(u_time>26 & u_time<100);
+y1 = simulation_data.q(u_time>26 & u_time<100);
+p = 10 ;
+%%
+p= 12;
+[D_id,S_svd,V_svd,Phi,Y,N] = pbsid12(u1,y1(:,1),p);
+%%
+n = 3;
+[A_id,B_id,K] = pbsid2(D_id,n,S_svd,V_svd,Phi,Y,N,p,u1,y1);
+eig(A_id)
+eig(A)
+eig(A1)
 %% Delete temporary files
 
 if exist('slprj','dir')
