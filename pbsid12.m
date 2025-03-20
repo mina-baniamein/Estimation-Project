@@ -1,5 +1,5 @@
-function [D,S_svd,V_svd,Phi,Y,N] = pbsid12(u,y,p)
-%%ANTI-DIAG GAMMADELTA
+function [D,S_svd,V_svd,Y,N] = pbsid12(u,y,p)
+%%ANTI-DIAG GAMMADELTA GIUSTO
 %First section of the pbsid algorithm for a SISO system
 %Requires Z_k2_k1 to be run
 %Inputs: command u and output measuraments y of the system
@@ -40,7 +40,7 @@ C_Delta_p = [C_Delta_p', zeros(1,2*p)];
 for i = 1:p
     Gamma_Delta_pp(i,:) = C_Delta_p(2*i-1: 2*i + 2*p -2);
 end
-disp(Gamma_Delta_pp)
+
 
 Z = [];
 

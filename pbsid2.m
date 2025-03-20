@@ -1,5 +1,5 @@
-function [A,B,K] = pbsid2(D,n,S_svd,V_svd,Phi,Y,N,p,u,y)
-
+function [A,B,C,K] = pbsid2(D,n,S_svd,V_svd,Y,N,p,u,y)
+% GIUSTO
 %Second section of the pbsid algorithm for a SISO system
 %Requires Z_k2_k1 to be run
 %Inputs: estmated D, n order, SV matrixes from decomposition, Phi matrix
@@ -9,13 +9,12 @@ function [A,B,K] = pbsid2(D,n,S_svd,V_svd,Phi,Y,N,p,u,y)
 
 % State estimation
 X_est_n = sqrtm(S_svd(1:n, 1:n)) * V_svd(:, 1:n)';
-u_C = u(p:N-1) ;%Phi(:,end);
+u_C = u(p:N-1) ;
 
 % C estimation
 b_C = Y - D*u_C;
 A_C = X_est_n';
-C = (A_C'*A_C)\(A_C'*b_C);
-%C = lsqr(A_C,b_C);
+C = lsqr(A_C,b_C);
 
 % A,B and K estimation
 e = zeros(N-2-p,1);
