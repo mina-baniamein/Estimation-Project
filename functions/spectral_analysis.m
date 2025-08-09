@@ -10,11 +10,11 @@ function [] = spectral_analysis(y,Ts)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fs = 1/Ts; % Sampling frequency
 n = length(y); 
-frequenze = linspace(0, fs/2, n/2);
+frequenze = linspace(0, fs/2, floor(n/2));
 
 % Fourier's Transform
 Y_fft = abs(fft(y)); 
-Y_fft = Y_fft(1:n/2); % Positive half
+Y_fft = Y_fft(1:floor(n/2)); % Positive half
 
 % Spectral analysis plot
 figure;

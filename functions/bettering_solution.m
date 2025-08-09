@@ -18,14 +18,15 @@ u_norm = (u_filt - min(u_filt)) / (max(u_filt) - min(u_filt));
 y_norm = (y_filt - min(y_filt)) / (max(y_filt) - min(y_filt));
 
 % Frame length of Savitzky-Golay filter
-framelen = fs/fc *5; % 
+framelen = fs/fc * 5; % 
 framelen = round(framelen) + (mod(round(framelen), 2) == 0) * (2 * (round(framelen) < framelen) - 1);
+framelen = 21;
 % Smoothing with Savitzky-Golay filter
 u_smooth = sgolayfilt(u_norm, 3, framelen);
 y_smooth = sgolayfilt(y_norm, 3, framelen);
 
 % Plotting
-figure;
+figure('Name','Optimizing Solution');
 subplot(2,1,1);
 plot(u_in, 'r--'); hold on; plot(u_smooth, 'b', 'LineWidth', 1.5);
 legend('Original', 'Filtered and Normalized');

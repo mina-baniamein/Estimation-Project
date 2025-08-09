@@ -1,8 +1,8 @@
-function [u3211_vect] = u3211(A,Ts)
+function [u3211_vect] = u3211(A,Ts,rip)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Estimation and Learning in Aerospace Project A.Y. 24-25 
-% Function creating a sequence u3211 with amplitude as "A" at sample time
-% "Ts" in a total time of 8 with an ammount of N samples
+% Function creating a  long sequence u3211 with amplitude as "A" at sample time
+% "Ts" in a total time of 8 with an ammount of N samples 
 
 % Outputs : u3211 : [N x 2] Sequence u3211 [time,input]
 
@@ -10,24 +10,19 @@ function [u3211_vect] = u3211(A,Ts)
 %            (@polimi.it)                     
 %            (@polimi.it)                                                   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+t_1 = ones(1/Ts,1);
+t_2 = ones(2/Ts,1);
+t_3 = ones(3/Ts,1);
 
-% Define time values
-t = [0:Ts:8]';
-sec1 = ones((1/Ts),1);
-sec3 = ones((3/Ts),1);
-sec2 = ones((2/Ts),1);
-sec05 = ones((0.5/Ts),1);
+u_section = [0*t_2;A*t_3;-A*t_2;A*t_1;-A*t_1];
+n = length(u_section);
+u = [0*t_3;u_section];
+for i = 1:rip
+    u = [u; u_section];
+end
+u = [u;0*t_3];
 
-u0 = 0.*sec05;
-u1 = A*sec3;
-u2 = -A*sec2;
-u3 = A*sec1;
-u4 = -u3;
-u5 = u0;
-
-u = [u0;u1;u2;u3;u4;u5;0];
-
-
+t = (0:Ts:length(u)*Ts)'; t = t(1:(end-1),1);
 % % Plot using stairs
 % figure;
 % plot(t, u, 'b');
@@ -38,3 +33,7 @@ u = [u0;u1;u2;u3;u4;u5;0];
 u3211_vect = [t,u];
 
 end
+
+
+
+

@@ -25,6 +25,7 @@ for i = 1:length(p_values)
     error(i) = norm(y - lsim(sys_id, u, t)); % Errore di simulazione
 end
 % Plotting errors
+figure('Name','y_output error by p')
 plot(p_values, error, 'o-')
 xlabel('p')
 ylabel('Errore di simulazione')
