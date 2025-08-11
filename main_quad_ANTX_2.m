@@ -248,6 +248,11 @@ simulation_data_PBSID = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
 %%
 plot((0:sample_time:simulation_time)',simulation_data_PBSID.q,'k',(0:sample_time:simulation_time)',simulation_data.q,'r--');
 clear x
+
+%% MonteCarlo
+
+[mc_results, mc_summary] = monte_carlo_greybox(u_3ord, y_q, y_ax, ...
+    Xu, Xq, Mu, Mq, Xd, Md, sample_time, 'verbose', true);
 %% Delete temporary files
 
 if exist('slprj','dir')
