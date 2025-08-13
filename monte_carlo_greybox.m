@@ -118,8 +118,8 @@ for mc_run = 1:num_monte_carlo
     
     % For longitudinal acceleration (y_ax), apply velocity-based noise
     % since acceleration is derived from velocity measurements
-    accel_noise = noise.vel_stand_dev * randn(size(y_ax)) / sample_time;  % Convert velocity noise to acceleration noise
-    y_ax_noisy = y_ax + accel_noise;
+    %accel_noise = noise.vel_stand_dev * randn(size(y_ax)) / sample_time;  % Convert velocity noise to acceleration noise
+    y_ax_noisy = y_ax; %+ accel_noise;
     
     % Input noise (angular rate related for control input)
     % Assuming u_3ord is related to angular rate commands
@@ -170,7 +170,7 @@ for mc_run = 1:num_monte_carlo
     
     %% Store noise realizations for this run (optional, for analysis)
     mc_results.noise_realizations(mc_run).y_q_noise = ang_rate_noise_q;
-    mc_results.noise_realizations(mc_run).y_ax_noise = accel_noise;
+    %mc_results.noise_realizations(mc_run).y_ax_noise = accel_noise;
     mc_results.noise_realizations(mc_run).input_noise = input_noise;
 end
 
@@ -305,15 +305,15 @@ if num_successful > 0
         title(sprintf('Angular Rate Noise Realizations (σ=%.4f)', noise.ang_rate_stand_dev));
         grid on;
         
-        subplot(2, 2, 4);
-        for i = 1:run_example
-            plot(mc_results.noise_realizations(successful_runs(i)).y_ax_noise, 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
-            hold on;
-        end
-        xlabel('Sample');
-        ylabel('Acceleration Noise [m/s²]');
-        title(sprintf('Acceleration Noise Realizations (σ≈%.4f)', noise.vel_stand_dev/sample_time));
-        grid on;
+        % subplot(2, 2, 4);
+        % for i = 1:run_example
+        %     plot(mc_results.noise_realizations(successful_runs(i)).y_ax_noise, 'Color', [0.7 0.7 0.7], 'LineWidth', 0.5);
+        %     hold on;
+        % end
+        % xlabel('Sample');
+        % ylabel('Acceleration Noise [m/s²]');
+        % title(sprintf('Acceleration Noise Realizations (σ≈%.4f)', noise.vel_stand_dev/sample_time));
+        % grid on;
     end
     
     %% Save Results
