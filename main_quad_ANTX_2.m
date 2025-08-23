@@ -246,19 +246,57 @@ A = A_PBSID; B = B_PBSID;
 C([2,4],:) = C_PBSID; D([2,4],:) = D_PBSID;
 simulation_data_PBSID = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
 %%
-plot((0:sample_time:simulation_time)',simulation_data_PBSID.q,'k',(0:sample_time:simulation_time)',simulation_data.q,'r--');
+plot((0:sample_time:simulation_time)',simulation_data_PBSID.q,'k',(0:sample_time:simulation_time)',simulation_data.q,'r--')
 clear x
 
 %% MonteCarlo
 
-[mc_results, mc_summary] = monte_carlo_greybox(u_3ord, y_q, y_ax, ...
-    Xu, Xq, Mu, Mq, Xd, Md, sample_time, 'verbose', true);
+% Selection on the input
+% New
+x = 1;
+while (x ~= 1) && (x ~= 2)
+    x = input('Select 1 for ExitationM and 2 for input u3211 : ');
+    if x == 1
+        load ExcitationM
+        input_mc = ExcitationM;
+    elseif x == 2
+        Ts_3ord = 0.001; % Sampling time for u3211
+        Amplitude = 0.1; % Amplitude
+        Ripetition = 19;
+        ExcitationM = u3211(Amplitude,Ts_3ord,Ripetition); % Function to generate u3211 input
+        input_mc = ExcitationM;
+    else
+        disp('Any valid number was selected');
+    end
+end
+%% 
+[mc_result_grey, mc_summary_grey] = monte_carlo_greybox(noise, input_mc,  ...
+    Xu, Xq, Mu, Mq, Xd, Md,  sample_time, 'num_monte_carlo', 100,'verbose', true, 'save_results', false);
 
 %% MonteCarlo 2
 
-doMonteCarlo = true;     % << Set to false for single run
-numMC = 50;              % Number of Monte Carlo runs if enabled
+% Selection on the input
+% New
+x = 1;
+while (x ~= 1) && (x ~= 2)
+    x = input('Select 1 for ExitationM and 2 for input u3211 : ');
+    if x == 1
+        load ExcitationM
+        input_mc = ExcitationM;
+    elseif x == 2
+        Ts_3ord = 0.001; % Sampling time for u3211
+        Amplitude = 0.1; % Amplitude
+        Ripetition = 19;
+        ExcitationM = u3211(Amplitude,Ts_3ord,Ripetition); % Function to generate u3211 input
+        input_mc = ExcitationM;
+    else
+        disp('Any valid number was selected');
+    end
+end
+%%
 
+numMC = 50;              % Number of Monte Carlo runs if enabled
+t_3ord=ExcitationM(:,1);
 
 Ts_3ord = sample_time;   % Rename for consistency
 y_3ord = y_q;            % PBSID single output assignment
@@ -275,28 +313,121 @@ min_p = 2*n_init; max_p = 40;
 p = better_p(u_3ord, y_3ord, min_p, max_p, n_init, Ts_3ord, t_3ord);
 disp(['The minimum error on the output is on p: ', num2str(p)]);
 
-%% ===== Step 3: PBSID Part 1 =====
+%% ===== Step 2: PBSID Part 1 =====
 [D_PBSID, S_PBSID, V_PBSID, Y, N] = pbsid_1part(u_3ord, y_3ord(:,1), p);
 
 % Select order from PBSID plot
 n = input('Looking at the graph, choose the order detected by PBSID: ');
-
+%% ===== Step 3: Monte Carlo
     % ---- MONTE CARLO IDENTIFICATION ----
-[mc_results, mc_summary] = monte_carlo_structuring( ...
-    u_3ord, y_q, t_3ord, ...
+[mc_result_PBSID, mc_summary_PBSID] = monte_carlo_structuring(noise, input_mc, t_3ord, ...
     real_parameters(1), real_parameters(2), ...
     real_parameters(3), real_parameters(4), ...
     real_parameters(5), real_parameters(6), ...
     Ts_3ord, fc, p, n, ...
-    'num_monte_carlo', 50, ...
-    'auto_p_selection', true, ...
+    'num_monte_carlo', 3, ...
+    'auto_p_selection', false, ...
     'noise_enabler', 1, ...
     'verbose', true, ...
-    'save_results', true, ...
+    'save_results', false, ...
     'plot_results', true);
 
     % Optional: display summary info
-    disp(mc_summary);
+    disp(mc_summary_PBSID);
+
+
+%% ===================== USER SETTINGS =====================
+% Frequency grid
+w = logspace(-3, 3, 1000);              % rad/s
+
+% Channel selection (for MIMO -> analyze G(iy, iu))
+iy = 1;     % output index (row)
+iu = 1;     % input index (column)
+
+% Real system (choose ONE of the following two lines)
+sys_real = ss(A, B, C, D);              % full outputs
+% sys_real = ss(A, B, C([2,4],:), D([2,4],:)); % only outputs 2 and 4
+
+% Filter only converged runs (convergence_flags == 1)
+use_converged_only = true;
+
+% Parameter names for histogram titles (adjust if you like)
+param_names = {'Xu','Xq','Mu','Mq','Xd','Md'};
+
+%% ===================== BUILD SYSTEM SETS =====================
+[sys_grey_set, mask_grey]   = build_systems_from_mc(mc_result_grey,   use_converged_only);
+[sys_pbsid_set, mask_pbsid] = build_systems_from_mc(mc_result_PBSID, use_converged_only);
+
+fprintf('Grey runs used:   %d\n', numel(sys_grey_set));
+fprintf('PBSID runs used:  %d\n', numel(sys_pbsid_set));
+
+%% ===================== FRF DISPERSION (BODE) ===============
+% Real system FRF (selected channel)
+[mag_real, ph_real] = frf_mag_phase(sys_real, w, iy, iu);
+
+% For GREY and PBSID sets
+mag_grey_all   = frf_mag_set(sys_grey_set, w, iy, iu);
+mag_pbsid_all  = frf_mag_set(sys_pbsid_set, w, iy, iu);
+
+ph_grey_all    = frf_phase_set(sys_grey_set, w, iy, iu);
+ph_pbsid_all   = frf_phase_set(sys_pbsid_set, w, iy, iu);
+
+% ---- Magnitude plot ----
+figure('Name','FRF Magnitude Dispersion (dB)','Color','w'); hold on; grid on; box on;
+plot_dispersion(w, mag_grey_all, [0 0.447 0.741], 'Grey-box');
+plot_dispersion(w, mag_pbsid_all, [0.85 0.325 0.098], 'PBSID');
+plot(w, mag_real, 'k-', 'LineWidth', 2.0, 'DisplayName','Real');
+set(gca, 'XScale','log'); 
+xlabel('\omega [rad/s]');
+ylabel('|H(j\omega)| [dB]');
+title('Frequency Response Magnitude Dispersion');
+legend('Location','best');
+
+% ---- Phase plot ----
+figure('Name','FRF Phase Dispersion (deg)','Color','w'); hold on; grid on; box on;
+plot_dispersion(w, ph_grey_all, [0 0.447 0.741], 'Grey-box');
+plot_dispersion(w, ph_pbsid_all, [0.85 0.325 0.098], 'PBSID');
+plot(w, ph_real, 'k-', 'LineWidth', 2.0, 'DisplayName','Real');
+set(gca, 'XScale','log'); 
+xlabel('\omega [rad/s]');
+ylabel('\angle H(j\omega) [deg]');
+title('Frequency Response Phase Dispersion');
+legend('Location','best');
+
+%% ===================== PARAMETER HISTOGRAMS ===================
+params_grey   = mc_result_grey.identified_params(mask_grey, :);
+params_pbsid  = mc_result_PBSID.identified_params(mask_pbsid, :);
+
+figure('Name','Identified Parameters Histogram','Color','w');
+tiledlayout(2,3, 'Padding','compact','TileSpacing','compact');
+nbins = 30;
+
+for k = 1:min(6, size(params_grey,2))
+    nexttile; hold on; grid on; box on;
+    histogram(params_grey(:,k), nbins, 'Normalization','pdf', ...
+        'DisplayName','Grey-box', 'FaceAlpha',0.35);
+    histogram(params_pbsid(:,k), nbins, 'Normalization','pdf', ...
+        'DisplayName','PBSID', 'FaceAlpha',0.35);
+    xlabel(param_names{k}); ylabel('PDF');
+    title(sprintf('Histogram: %s', param_names{k}));
+    legend('Location','best');
+end
+
+%% ===================== POLES & ZEROS HISTOGRAMS ==============
+[poles_grey, zeros_grey]     = pz_from_systems(sys_grey_set);
+[poles_pbsid, zeros_pbsid]   = pz_from_systems(sys_pbsid_set);
+
+figure('Name','Poles & Zeros Density','Color','w');
+tiledlayout(2,2, 'Padding','compact','TileSpacing','compact');
+
+nexttile; density_complex(poles_grey);   title('Poles Density - Grey-box'); xlabel('Re'); ylabel('Im'); axis equal;
+nexttile; density_complex(zeros_grey);   title('Zeros Density - Grey-box'); xlabel('Re'); ylabel('Im'); axis equal;
+nexttile; density_complex(poles_pbsid);  title('Poles Density - PBSID'); xlabel('Re'); ylabel('Im'); axis equal;
+nexttile; density_complex(zeros_pbsid);  title('Zeros Density - PBSID'); xlabel('Re'); ylabel('Im'); axis equal;
+
+%% ===================== DONE =====================
+disp('Plots generated: Bode dispersion (magnitude & phase), parameter histograms, poles/zeros density.');
+
 
 %% Delete temporary files
 
