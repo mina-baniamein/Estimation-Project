@@ -248,6 +248,56 @@ simulation_data_PBSID = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
 %%
 plot((0:sample_time:simulation_time)',simulation_data_PBSID.q,'k',(0:sample_time:simulation_time)',simulation_data.q,'r--');
 clear x
+
+%% MonteCarlo
+
+[mc_results, mc_summary] = monte_carlo_greybox(u_3ord, y_q, y_ax, ...
+    Xu, Xq, Mu, Mq, Xd, Md, sample_time, 'verbose', true);
+
+%% MonteCarlo 2
+
+doMonteCarlo = true;     % << Set to false for single run
+numMC = 50;              % Number of Monte Carlo runs if enabled
+
+
+Ts_3ord = sample_time;   % Rename for consistency
+y_3ord = y_q;            % PBSID single output assignment
+
+%% ===== Step 1: Spectral Analysis & Cutting Frequency =====
+spectral_analysis(y_3ord, Ts_3ord);
+fc = input('Select the cutting frequency of the output : ');
+
+% Apply bettering solution
+[u_3ord, y_3ord] = bettering_solution(u_3ord, y_3ord, fc, Ts_3ord);
+
+n_init = 3;  % assumed system order for better_p calculation
+min_p = 2*n_init; max_p = 40; 
+p = better_p(u_3ord, y_3ord, min_p, max_p, n_init, Ts_3ord, t_3ord);
+disp(['The minimum error on the output is on p: ', num2str(p)]);
+
+%% ===== Step 3: PBSID Part 1 =====
+[D_PBSID, S_PBSID, V_PBSID, Y, N] = pbsid_1part(u_3ord, y_3ord(:,1), p);
+
+% Select order from PBSID plot
+n = input('Looking at the graph, choose the order detected by PBSID: ');
+
+    % ---- MONTE CARLO IDENTIFICATION ----
+[mc_results, mc_summary] = monte_carlo_structuring( ...
+    u_3ord, y_q, t_3ord, ...
+    real_parameters(1), real_parameters(2), ...
+    real_parameters(3), real_parameters(4), ...
+    real_parameters(5), real_parameters(6), ...
+    Ts_3ord, fc, p, n, ...
+    'num_monte_carlo', 50, ...
+    'auto_p_selection', true, ...
+    'noise_enabler', 1, ...
+    'verbose', true, ...
+    'save_results', true, ...
+    'plot_results', true);
+
+    % Optional: display summary info
+    disp(mc_summary);
+
 %% Delete temporary files
 
 if exist('slprj','dir')
