@@ -253,7 +253,7 @@ clear x
 
 % Selection on the input
 % New
-x = 1;
+x = 0;
 while (x ~= 1) && (x ~= 2)
     x = input('Select 1 for ExitationM and 2 for input u3211 : ');
     if x == 1
@@ -271,18 +271,18 @@ while (x ~= 1) && (x ~= 2)
 end
 %% 
 [mc_result_grey, mc_summary_grey] = monte_carlo_greybox(noise, input_mc,  ...
-    Xu, Xq, Mu, Mq, Xd, Md,  sample_time, 'num_monte_carlo', 100,'verbose', true, 'save_results', false);
+    Xu, Xq, Mu, Mq, Xd, Md,  sample_time, 'num_monte_carlo', 50,'verbose', true, 'save_results', false);
 
 %% MonteCarlo 2
 
 % Selection on the input
 % New
-x = 1;
+x = 0;
 while (x ~= 1) && (x ~= 2)
     x = input('Select 1 for ExitationM and 2 for input u3211 : ');
     if x == 1
         load ExcitationM
-        input_mc = ExcitationM;
+        input_mc = simulation_data.Mtot; 
     elseif x == 2
         Ts_3ord = 0.001; % Sampling time for u3211
         Amplitude = 0.1; % Amplitude
@@ -296,17 +296,17 @@ end
 %%
 
 numMC = 50;              % Number of Monte Carlo runs if enabled
-t_3ord=ExcitationM(:,1);
-
+%t_3ord=ExcitationM(:,1);
+t_3ord=(0:sample_time:simulation_time)';
 Ts_3ord = sample_time;   % Rename for consistency
-y_3ord = y_q;            % PBSID single output assignment
+y_3ord = simulation_data.q;            % PBSID single output assignment
 
 %% ===== Step 1: Spectral Analysis & Cutting Frequency =====
 spectral_analysis(y_3ord, Ts_3ord);
 fc = input('Select the cutting frequency of the output : ');
 
 % Apply bettering solution
-[u_3ord, y_3ord] = bettering_solution(u_3ord, y_3ord, fc, Ts_3ord);
+[u_3ord, y_3ord] = bettering_solution(input_mc, y_3ord, fc, Ts_3ord);
 
 n_init = 3;  % assumed system order for better_p calculation
 min_p = 2*n_init; max_p = 40; 
@@ -320,12 +320,12 @@ disp(['The minimum error on the output is on p: ', num2str(p)]);
 n = input('Looking at the graph, choose the order detected by PBSID: ');
 %% ===== Step 3: Monte Carlo
     % ---- MONTE CARLO IDENTIFICATION ----
-[mc_result_PBSID, mc_summary_PBSID] = monte_carlo_structuring(noise, input_mc, t_3ord, ...
+[mc_result_PBSID, mc_summary_PBSID] = monte_carlo_structuring(noise, [t_3ord, input_mc], t_3ord, ...
     real_parameters(1), real_parameters(2), ...
     real_parameters(3), real_parameters(4), ...
     real_parameters(5), real_parameters(6), ...
     Ts_3ord, fc, p, n, ...
-    'num_monte_carlo', 3, ...
+    'num_monte_carlo', 10, ...
     'auto_p_selection', false, ...
     'noise_enabler', 1, ...
     'verbose', true, ...
