@@ -139,7 +139,7 @@ end
 %% Real Parameter Vector (reference)
 real_parameters = [Xu; Xq; Mu; Mq; Xd; Md];
 ExcitationM = input_mc;
-t=ExcitationM(:,1);
+t=t_3ord;
 
 A=[Xu, Xq, -9.81; Mu, Mq, 0; 0, 1, 0];
 
