@@ -12,12 +12,12 @@ sim_data = iddata(y, u, Ts);
 data_fd = fft(sim_data); % output of the simulation in the frequency domain
 
 sys_init = idgrey(fun, theta0, 'c');
+identification = struct;
 
 % Greyest Options
 options = greyestOptions('Display', 'on', 'SearchMethod', 'lsqnonlin');
 options.SearchOptions.FunctionTolerance = 1e-6;
 % Actual Model Identification
-identification = struct;
 estimated_model = greyest(data_fd, sys_init);
 identification.parameters = estimated_model.Report.Parameters.ParVector;
 identification.fit = estimated_model.Report.Fit.FitPercent;

@@ -18,9 +18,11 @@ Y_fft = Y_fft(1:floor(n/2)); % Positive half
 
 % Spectral analysis plot
 figure;
-plot(frequenze, Y_fft, 'b', 'LineWidth', 1.5);
+plot(frequenze, Y_fft, 'LineWidth', 1.5);
+xline(3,'--k','f_c = 3 Hz')
 xlabel('Frequency (Hz)');
 ylabel('Magnitude');
-title('Spectral analysis of the signal');
+title('Spectral analysis of the signal','FontSize',15);
+xlim([0,max(frequenze)])
 
 end

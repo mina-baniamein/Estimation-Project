@@ -26,11 +26,20 @@ for i = 1:length(p_values)
 end
 % Plotting errors
 figure('Name','y_output error by p')
-plot(p_values, error, 'o-')
+semilogy(p_values, error, 'o-')
 xlabel('p')
-ylabel('Errore di simulazione')
+ylabel('Simulation Error')
+title('P evolution error','FontSize',20)
 grid on
+% Inset on t = 10 h
+axes('Position', [0.6, 0.6, 0.3, 0.3]);
+hold on; grid on; box on;
+title('Inset around p = [33, 36]')
+semilogy(p_values, error, 'o-')
+xlim([33, 36]);
+
 % P search for the minimum error
 p = p_values(find(error==min(error)));
 clc
+disp(min(error))
 end

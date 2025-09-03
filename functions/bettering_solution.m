@@ -30,11 +30,11 @@ figure('Name','Optimizing Solution');
 subplot(2,1,1);
 plot(u_in, 'r--'); hold on; plot(u_smooth, 'b', 'LineWidth', 1.5);
 legend('Original', 'Filtered and Normalized');
-title('Input signal');
+title('Input signal','FontSize',20);
 
 subplot(2,1,2);
 plot(y_in, 'r--'); hold on; plot(y_smooth, 'b', 'LineWidth', 1.5);
 legend('Original', 'Filtered and Normalized');
-title('Output signal');
+title('Output signal','FontSize',20);
 
 end

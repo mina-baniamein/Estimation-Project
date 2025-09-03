@@ -41,3 +41,4 @@ A = reshape(ABK(1:n^2),n,n);
 B = ABK(n^2+1:n^2+n);
 K = ABK(n^2+n+1:end);
 A = A'; C = C' ;
+end
